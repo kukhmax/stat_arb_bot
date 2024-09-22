@@ -130,3 +130,4 @@ htmlcov/
 *.tar.gz
 *.txt
 *.json
+*.csv
