@@ -15,7 +15,7 @@ def store_price_history(symbols):
             if price_history:
                 price_history_dict[symbol_name] = price_history['result']['list']
                 counts += 1
-                print(f"{counts} items stored")
+                # print(f"{counts} items stored")
             else:
                 print(f"{counts} items not stored")
         except Exception as e:

@@ -1,9 +1,18 @@
-from statsmodels.tsa.stattools import coint
 import statsmodels.api as sm
 import pandas as pd
 import numpy as np
 from itertools import combinations
+from statsmodels.tsa.stattools import coint
+from config_strategy_api import Z_SCORE_WINDOW
 
+
+# Calculate Z-Score
+def calculate_zscore(spread):
+    df = pd.DataFrame(spread)
+    mean = df.rolling(window=Z_SCORE_WINDOW).mean()
+    std = df.rolling(window=Z_SCORE_WINDOW).std()
+    zscore = (df - mean) / std
+    return zscore.squeeze().astype(float).values  # squeeze для упрощения DataFrame в Series
 
 # Calculate spread
 def calculate_spread(series_1, series_2, hedge_ratio):
@@ -15,8 +24,9 @@ def calculate_cointegration(series_1, series_2):
     coint_res = coint(series_1, series_2)
     coint_flag = 0
     coint_t, p_value, crit_values = coint_res
+    critical_value = crit_values[1]
     model = sm.OLS(series_1, sm.add_constant(series_2)).fit()
-    hedge_ratio = model.params[1]  # Получаем коэффициент хеджирования (hedge ratio)
+    hedge_ratio = model.params[0]  # Получаем коэффициент хеджирования (hedge ratio)
     
     spread = calculate_spread(series_1, series_2, hedge_ratio)
     sign_changes = np.sign(spread)
@@ -24,7 +34,7 @@ def calculate_cointegration(series_1, series_2):
     zero_crossings = np.sum(np.diff(sign_changes) != 0)
     # zero_crossings = len(np.where(np.diff(np.sign(spread)))[0])    #np.sum(np.diff(np.sign(spread)) != 0)  # Количество пересечений 0
 
-    if p_value < 0.5 and coint_t < crit_values[1]:  # Используем 5%-ый критический уровень
+    if p_value < 0.5 and coint_t < critical_value:  # Используем 5%-ый критический уровень
         coint_flag = 1
 
     return (
@@ -62,8 +72,12 @@ def get_cointegrated_pairs(prices):
         unique_key = tuple(sorted([sym_1, sym_2]))  # Уникальная комбинация
         if unique_key in included_pairs:
             break
-
-        coint_flag, p_value, t_value, c_value, hedge_ratio, zero_crossings = calculate_cointegration(series_1, series_2)
+        
+        try:
+            coint_flag, p_value, t_value, c_value, hedge_ratio, zero_crossings = calculate_cointegration(series_1, series_2)
+        except Exception as e:
+            print(e)
+            continue
 
         if coint_flag == 1:
             included_pairs.add(unique_key)

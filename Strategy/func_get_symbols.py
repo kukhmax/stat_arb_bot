@@ -6,7 +6,7 @@ def get_tradeable_symbols():
     
     sym_list = []
     symbols = session.get_instruments_info(
-        category='spot',
+        category='linear',
         status="Trading"
     )
     if 'retCode' in symbols.keys() and symbols['retMsg'] == "OK":
@@ -14,7 +14,8 @@ def get_tradeable_symbols():
         for symbol in symbols:
             if symbol["quoteCoin"] == "USDT":
                 sym_list.append(symbol)
-        # with open('symbols.json', 'w') as f:
-        #     json.dump(sym_list, f)
+        with open('symbols.json', 'w') as f:
+            json.dump(sym_list, f)
+        print(f"Total symbols: {len(sym_list)}")
     return sym_list
 
