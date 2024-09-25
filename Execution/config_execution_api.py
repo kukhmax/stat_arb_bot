@@ -13,7 +13,7 @@ SIGNAL_NEGATIVE_TICKER = TICKER_1
 ROUNDING_TICKER_1 = 3
 ROUNDING_TICKER_2 = 4
 QUANTITY_ROUNDING_TICKER_1 = 0
-QUANTITY_ROUNDING_TICKER_2 = 3
+QUANTITY_ROUNDING_TICKER_2 = 0
 
 LIMIT_ORDER_BASIS = True  # Will ensure positions (except for close) will be placed on limit basis
 
@@ -48,3 +48,19 @@ session = HTTP(
     api_secret=API_SECRET,
 )
 
+from pybit.unified_trading import WebSocket
+from time import sleep
+
+ws = WebSocket(
+    testnet=True,
+    channel_type="linear",
+)
+# def handle_message(message):
+#     print(message)
+# ws.orderbook_stream(
+#     depth=50,  # Можно выбрать 1, 50, 200 или 500
+#     symbol=[TICKER_1, TICKER_2],
+#     callback=handle_message
+# )
+# while True:
+#     sleep(1)
