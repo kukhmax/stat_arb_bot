@@ -13,9 +13,10 @@ from config_execution_api import (
 def extract_close_prices(prices):
     close_prices = []
     for price_values in prices:
-        if math.isnan(price_values["close"]):
+        close = float(price_values[4])
+        if math.isnan(close):
             return []
-        close_prices.append(price_values["close"])
+        close_prices.append(close)
     return close_prices
 
 # Get trade details and latest prices
