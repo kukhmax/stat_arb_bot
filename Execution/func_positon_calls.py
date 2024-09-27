@@ -1,5 +1,5 @@
 import logging
-from config_execution_api import session, TICKER_1
+from config_execution_api import session
 
 
 logging.basicConfig(
@@ -37,7 +37,7 @@ def active_position_confirmation(ticker):
             limit=5,
         )
         if active_orders.get('retMsg') == "OK" and active_orders['result']['list']:
-            logging.info(f"There are {len(active_orders['result']['list'])} active orders for {TICKER_1}.  ")
+            logging.info(f"There are {len(active_orders['result']['list'])} active orders for {ticker}.  ")
             return True
         logging.info(f"Нет активных ордеров для {ticker}.")
     except Exception as e:
