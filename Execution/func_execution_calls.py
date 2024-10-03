@@ -1,10 +1,22 @@
 import logging
-from config_execution_api import session, ws,LIMIT_ORDER_BASIS
+import inspect
+from threading import Event
+from config_execution_api import session, ws, LIMIT_ORDER_BASIS
 from func_calculations import get_trade_details
+from websocket_decorator import websocket_subscription, ws_manager
 
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Функция для получения текущей строки кода и названия функции для логов
+def log_info(message):
+    frame = inspect.currentframe().f_back
+    logging.info(f"{message} | Function: {frame.f_code.co_name} | Line: {frame.f_lineno}")
+
+def log_error(message):
+    frame = inspect.currentframe().f_back
+    logging.error(f"{message} | Function: {frame.f_code.co_name} | Line: {frame.f_lineno}")
 
 
 # Установка плеча
@@ -18,11 +30,11 @@ def set_leverage(ticker):
             sellLeverage="1"
         )
         if response["retCode"] == 0:
-            logging.info(f"Плечо успешно установлено для {ticker}")
+            log_info(f"Плечо успешно установлено для {ticker}")
         else:
-            logging.error(f"Ошибка установки плеча для {ticker}: {response['retMsg']}")
+            log_error(f"Ошибка установки плеча для {ticker}: {response['retMsg']}")
     except Exception as e:
-        logging.error(f"Исключение при установке плеча для {ticker}: {e}")
+        log_error(f"Исключение при установке плеча для {ticker}: {e}")
 
 # Размещение лимитного или рыночного ордера
 def place_order(ticker, price, quantity, direction, stop_loss):
@@ -60,15 +72,18 @@ def place_order(ticker, price, quantity, direction, stop_loss):
 
         # Проверка успешности размещения ордера
         if order["retCode"] == 0:
-            logging.info(f"Ордера на {side} {quantity} {ticker} успешно размещён.")
+            log_info(f"Ордера на {side} {quantity} {ticker} успешно размещён.")
             return order["result"]["orderId"]
         else:
-            logging.error(f"Ошибка размещения ордера по {ticker}: {order['retMsg']}")
-            return None
+            log_error(f"Ошибка размещения ордера по {ticker}: {order['retMsg']}")
+            return 0
     except Exception as e:
-        logging.error(f"Исключение при размещении ордера по {ticker}: {e}")
-        return None
+        log_error(f"Исключение при размещении ордера по {ticker}: {e}")
+        return 0
     
+@websocket_subscription
+def orderbook_stream(depth, symbol, callback):
+    ws.orderbook_stream(depth=depth, symbol=symbol, callback=callback)
    
 def initialise_order_execution(ticker, direction, capital):
     
@@ -111,6 +126,7 @@ def initialise_order_execution(ticker, direction, capital):
     while not order_placed:
         pass  # Цикл для ожидания размещения ордера, можно заменить на более изящное ожидание
 
+    # return order_placed_success
 
 # Пример вызова функции
 # initialise_order_execution("ENAUSDT", "Long", 2000)

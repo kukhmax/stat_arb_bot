@@ -79,7 +79,7 @@ def check_order(ticker, order_id, remaining_capital, direction="Long"):
 
 
 # Пример вызова функции
-check_order("AXSUSDT", "order12345", 1000, "Long")
+# check_order("AXSUSDT", "order12345", 1000, "Long")
 
 
 # orderStatus

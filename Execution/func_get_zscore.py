@@ -7,7 +7,11 @@ from func_price_calls import get_latest_klines
 from func_stats import calculate_metrics
 
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s - %(levelname)s - %(message)s - [%(funcName)s:%(lineno)d]",
+    datefmt="%Y-%m-%d %H:%M:%S"
+    )
 
 # Функция для получения последнего z-score
 def get_latest_zscore():
@@ -21,10 +25,10 @@ def get_latest_zscore():
         nonlocal mid_price_1, mid_price_2  # Доступ к переменным из внешней области видимости
         if message['topic'] == f'orderbook.50.{TICKER_1}':
             mid_price_1, _, _ = get_trade_details(message)
-            logging.info(f"Получена средняя цена для {TICKER_1}: {mid_price_1}")
+            # logging.info(f"Получена средняя цена для {TICKER_1}: {mid_price_1}")
         elif message['topic'] == f'orderbook.50.{TICKER_2}':  # Предположим, что вторая пара — {TICKER_2}
             mid_price_2, _, _ = get_trade_details(message)
-            logging.info(f"Получена средняя цена для {TICKER_2}: {mid_price_2}")
+            # logging.info(f"Получена средняя цена для {TICKER_2}: {mid_price_2}")
 
     # Подписка на потоки ордербуков для двух активов (например, {TICKER_1} и {TICKER_2})
     ws.orderbook_stream(
@@ -63,6 +67,11 @@ def get_latest_zscore():
 
         logging.info(f"Z-score: {zscore}, Положительный сигнал: {signal_sign_positive}")
 
+        # После расчета z-score отменяем подписку на ордербуки
+        ws.unsubscribe(topic=f"orderbook.50.{TICKER_1}")
+        ws.unsubscribe(topic=f"orderbook.50.{TICKER_2}")
+        logging.info("Подписка на ордербук отменена.")
+        
         # Возвращаем z-score и сигнал
         return zscore, signal_sign_positive
 
