@@ -78,9 +78,11 @@ if __name__ == "__main__":
 
             # Get and save the latest z-score
             zscore, signal_sign_positive = get_latest_zscore()
+            
+            logging.info(f"zscore: {zscore} signal_sign_positive: {signal_sign_positive} signal_side: {signal_side}")
 
             # Close positions
-            if signal_side == "positive" and zscore < 0:
+            if signal_side == "positive" and zscore <= 0:
                 kill_switch = 2
             if signal_side == "negative" and zscore >= 0:
                 kill_switch = 2

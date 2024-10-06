@@ -17,31 +17,13 @@ from func_get_zscore import get_latest_zscore
 from func_execution_calls import initialise_order_execution
 from func_order_review import check_order
 
-# Настройка логирования
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+from colorama import Fore, Style
 
-# Функция для получения текущей строки кода и названия функции для логов
-def log_info(message):
-    frame = inspect.currentframe().f_back
-    logging.info(f"{message} | Function: {frame.f_code.co_name} | Line: {frame.f_lineno}")
-
-def log_error(message):
-    frame = inspect.currentframe().f_back
-    logging.error(f"{message} | Function: {frame.f_code.co_name} | Line: {frame.f_lineno}")
-    
-# Подписка на потоки ордербуков для двух активов (например, {TICKER_1} и {TICKER_2})
-    ws.orderbook_stream(
-        depth=50,
-        symbol=TICKER_1,
-        callback=manage_new_trades
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s - %(levelname)s - %(message)s - [%(funcName)s:%(lineno)d]",
+    datefmt="%Y-%m-%d %H:%M:%S"
     )
-    
-    ws.orderbook_stream(
-        depth=50,
-        symbol=TICKER_2,
-        callback=manage_new_trades
-    )
-
 
 # Manage new trade assessment and order placing
 def manage_new_trades(kill_switch):
@@ -61,8 +43,8 @@ def manage_new_trades(kill_switch):
         
         # Active hot trigger
         hot = True
-        log_info("-- Trade Status HOT --")
-        log_info("-- Placing and Monitoring Existing Trades --")
+        logging.info("-- Trade Status HOT --")
+        logging.info("-- Placing and Monitoring Existing Trades --")
     
     # Place and manage trades
     if hot and kill_switch == 0:
@@ -71,7 +53,7 @@ def manage_new_trades(kill_switch):
         avg_liquidity_ticker_p, last_price_p = get_ticker_trade_liquidity(SIGNAL_POSITIVE_TICKER)
         avg_liquidity_ticker_n, last_price_n = get_ticker_trade_liquidity(SIGNAL_NEGATIVE_TICKER)
 
-        # Determine long ticker vs short ticker
+       # Determine long ticker vs short ticker
         if signal_sign_positive:
             # Если сигнал положительный, устанавливаем положительный тикер как длинную позицию,
             # а отрицательный — как короткую. Также присваиваем соответствующие значения ликвидности и цены.
@@ -90,7 +72,7 @@ def manage_new_trades(kill_switch):
             last_price_long = last_price_n
             last_price_short = last_price_p
             
-        # Fill targets
+      
         # Капитал делится поровну между длинной и короткой позициями.
         capital_long = TRADEABLE_CAPITAL_USDT * 0.5
         capital_short = TRADEABLE_CAPITAL_USDT - capital_long
@@ -152,12 +134,15 @@ def manage_new_trades(kill_switch):
             # Allow for time to register the limit orders
             time.sleep(3)
 
-            # Check limit orders and ensure z_score is still within range
             # Получение обновлённого z-score и сигнала.
             zscore_new, signal_sign_p_new = get_latest_zscore()
+            print()
+            
+            logging.info(Fore.MAGENTA + f"count_long = {counts_long} | count_short = {counts_short} | kill_switch = {kill_switch}" + Style.RESET_ALL)
             # Если kill_switch всё ещё равен 0, и обновлённый z-score по-прежнему превышает порог в 90% и знак сигнала не изменился, продолжаем торговлю.
             if kill_switch == 0:
                 if abs(zscore_new) > SIGNAL_TRIGGER_THRESH * 0.9 and signal_sign_p_new == signal_sign_positive:
+                    logging.info(Fore.CYAN + f"New Z-Score: {zscore_new}" + Style.RESET_ALL)
                     
                     # Check long order status
                     if counts_long == 1:
@@ -167,7 +152,7 @@ def manage_new_trades(kill_switch):
                     if counts_short == 1:
                         order_status_short = check_order(short_ticker, order_short_id, remaining_capital_short, "Short")
 
-                log_info(f"Order Status Long: {order_status_long}\nOrder Status Short: {order_status_short}\nZ-Score: {zscore_new}")
+                logging.info(Fore.GREEN + f"Order Status Long: " + Fore.YELLOW + f"{order_status_long}" + Style.RESET_ALL + "  ||  " + Fore.RED + f"Order Status Short: " + Fore.YELLOW + f"{order_status_short}" + Style.RESET_ALL)
                 
                 # If orders still active, do nothing
                 if order_status_long == "Order Active" or order_status_short == "Order Active":
@@ -183,8 +168,7 @@ def manage_new_trades(kill_switch):
 
                 # If position filled - place another trade
                 if order_status_long == "Position Filled" and order_status_short == "Position Filled":
-                    counts_long = 0
-                    counts_short = 0
+                    kill_switch = 1
 
                 # If order cancelled for long - try again
                 if order_status_long == "Try Again":

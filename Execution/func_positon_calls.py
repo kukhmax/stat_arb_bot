@@ -1,5 +1,6 @@
 import logging
 from config_execution_api import session
+from colorama import Fore, Style
 
 
 logging.basicConfig(
@@ -19,7 +20,7 @@ def open_position_confirmation(ticker):
             for item in position['result']['list']:
                 size = float(item['size'])
                 if size > 0:
-                    logging.info(f"Position {item['symbol']} opened with size: {item['size']}")
+                    logging.info(f"Позиция {item['symbol']} открыта с объёмом: {item['size']}")
                     return True
         logging.info(f"Нет открытых позиций по тикеру {ticker}.")
     except Exception as e:
@@ -37,7 +38,7 @@ def active_position_confirmation(ticker):
             limit=5,
         )
         if active_orders.get('retMsg') == "OK" and active_orders['result']['list']:
-            logging.info(f"There are {len(active_orders['result']['list'])} active orders for {ticker}.  ")
+            logging.info(f"{len(active_orders['result']['list'])} активный(х) ордер(ов) по {ticker}.  ")
             return True
         logging.info(f"Нет активных ордеров для {ticker}.")
     except Exception as e:
@@ -52,17 +53,17 @@ def get_open_positions(ticker, direction="Long"):
             category="linear",
             symbol=ticker,
         )
-        print(position)
+        # print(position)
         if position["ret_msg"] == "OK":
             for pos in position["result"]["list"]:
                 if float(pos["size"]) > 0:
                     order_price = float(pos["entryPrice"])
                     order_quantity = float(pos["size"])
-                    logging.info(f"Цена позиции {ticker}: {order_price}, Объём: {order_quantity}")
+                    logging.info(Fore.MAGENTA + f"Цена позиции {ticker}: {order_price}, Объём: {order_quantity}" + Style.RESET_ALL)
                     return order_price, order_quantity
-        logging.info(f"Нет открытых позиций по тикеру {ticker}.")
+        logging.info(Fore.CYAN + f"Нет открытых позиций по тикеру {ticker}." + Style.RESET_ALL)
     except Exception as e:
-        logging.error(f"Ошибка при получении позиции для {ticker}: {e}")
+        logging.error(Fore.RED + f"Ошибка при получении позиции для {ticker}: {e}" + Style.RESET_ALL)
         return 0, 0
     return 0, 0
         
@@ -102,11 +103,11 @@ def query_existing_order(ticker, order_id):
             order_price = float(order["result"]["list"][0]["price"])
             order_quantity = float(order["result"]["list"][0]["qty"])
             order_status = order["result"]["list"][0]["orderStatus"]
-            logging.info(f"Ордер {order_id} по {ticker}: Цена: {order_price}, Объём: {order_quantity}, Статус: {order_status}")
+            logging.info(Fore.BLUE + f"Ордер {order_id} по {ticker}: Цена: {order_price}, Объём: {order_quantity}, Статус: {order_status}" + Style.RESET_ALL)
             return order_price, order_quantity, order_status
 
         logging.info(f"Ордер {order_id} не найден для {ticker}.")
     except Exception as e:
-        logging.error(f"Ошибка при запросе ордера {order_id} для {ticker}: {e}")
+        logging.error(Fore.RED + f"Ошибка при запросе ордера {order_id} для {ticker}: {e}" + Style.RESET_ALL)
         return 0, 0, 0
     return 0, 0, 0

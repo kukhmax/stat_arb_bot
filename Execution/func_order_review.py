@@ -6,7 +6,9 @@ from func_positon_calls import (
     get_active_positions
 )
 from func_calculations import get_trade_details
-from config_execution_api import ws
+from pybit.unified_trading import WebSocket
+
+from colorama import Fore, Style
 
 
 logging.basicConfig(
@@ -25,9 +27,15 @@ def check_order(ticker, order_id, remaining_capital, direction="Long"):
         nonlocal mid_price
         if message['topic'] == f'orderbook.50.{ticker}':
             mid_price, _, _ = get_trade_details(message)
-            logging.info(f"Средняя цена для {ticker}: {mid_price}")
+            # logging.info(Fore.WHITE + f"Средняя цена для {ticker}: {mid_price}" + Style.RESET_ALL)
 
     # Подписка на WebSocket поток для получения данных о стакане
+    
+    ws = WebSocket(
+        testnet=True,
+        channel_type="linear",
+    )
+    
     ws.orderbook_stream(
         depth=50,  # Глубина стакана
         symbol=ticker,
@@ -36,6 +44,9 @@ def check_order(ticker, order_id, remaining_capital, direction="Long"):
     
     # Ожидание получения данных через WebSocket
     while mid_price is None:
+        if mid_price:
+            ws.exit()  # Останавливаем WebSocket
+            logging.info(Fore.MAGENTA + "WebSocket соединение закрыто." + Style.RESET_ALL)
         sleep(0.3)
     
     # Получение деталей ордера
@@ -48,32 +59,32 @@ def check_order(ticker, order_id, remaining_capital, direction="Long"):
 
     # 1. Если количество позиции больше или равно оставшемуся капиталу
     if position_quantity >= remaining_capital and position_quantity > 0:
-        logging.info(f"Позиция заполнена: {position_quantity}, оставшийся капитал: {remaining_capital}")
-        return "Trade Complete"
+        logging.info(Fore.GREEN + f"Позиция заполнена: {position_quantity}, оставшийся капитал: {remaining_capital}" + Style.RESET_ALL)
+        return F"Trade Complete"
 
     # 2. Если ордер был полностью заполнен
     if order_status == "Filled":
-        logging.info(f"Ордер {order_id} полностью выполнен.")
+        logging.info(Fore.GREEN + f"Ордер {order_id} полностью выполнен." + Style.RESET_ALL)
         return "Position Filled"
 
     # 3. Если ордер активен (новый или создан)
     if order_status == "New":
-        logging.info(f"Ордер {order_id} активен.")
+        logging.info(Fore.GREEN + f"Ордер {order_id} активен." + Style.RESET_ALL)
         return "Order Active"
 
     # 4. Если ордер частично заполнен
     if order_status == "PartiallyFilled":
-        logging.info(f"Ордер {order_id} частично заполнен.")
+        logging.info(Fore.GREEN + f"Ордер {order_id} частично заполнен." + Style.RESET_ALL)
         return "Partial Fill"
 
     # 5. Если ордер отменён или отклонён
     cancel_items = ["Cancelled", "Rejected", "Triggered", "Deactivated"]
     if order_status in cancel_items:
-        logging.info(f"Ордер {order_id} был отменён или отклонён.")
+        logging.info(Fore.GREEN + f"Ордер {order_id} был отменён или отклонён." + Style.RESET_ALL)
         return "Try Again"
 
     # Если ничего не подошло
-    return "Unknown Status"
+    return Fore.RED + "Unknown Status" + Style.RESET_ALL
 
 
 

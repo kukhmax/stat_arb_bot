@@ -1,10 +1,13 @@
 import logging
 from time import sleep
 
-from config_execution_api import ws, TICKER_1, TICKER_2
+from config_execution_api import TICKER_1, TICKER_2
 from func_calculations import get_trade_details
 from func_price_calls import get_latest_klines
 from func_stats import calculate_metrics
+
+from pybit.unified_trading import WebSocket
+from colorama import Fore, Style
 
 
 logging.basicConfig(
@@ -29,6 +32,11 @@ def get_latest_zscore():
         elif message['topic'] == f'orderbook.50.{TICKER_2}':  # Предположим, что вторая пара — {TICKER_2}
             mid_price_2, _, _ = get_trade_details(message)
             # logging.info(f"Получена средняя цена для {TICKER_2}: {mid_price_2}")
+            
+    ws = WebSocket(
+        testnet=True,
+        channel_type="linear",
+    )
 
     # Подписка на потоки ордербуков для двух активов (например, {TICKER_1} и {TICKER_2})
     ws.orderbook_stream(
@@ -65,12 +73,12 @@ def get_latest_zscore():
         zscore = zscore_list[-1]
         signal_sign_positive = zscore > 0
 
-        logging.info(f"Z-score: {zscore}, Положительный сигнал: {signal_sign_positive}")
-
-        # После расчета z-score отменяем подписку на ордербуки
-        ws.unsubscribe(topic=f"orderbook.50.{TICKER_1}")
-        ws.unsubscribe(topic=f"orderbook.50.{TICKER_2}")
-        logging.info("Подписка на ордербук отменена.")
+        logging.info(Fore.YELLOW + f"Z-score: {zscore}, Положительный сигнал: {signal_sign_positive} " + Style.RESET_ALL)
+        
+        if mid_price_1 is not None and mid_price_2 is not None:
+            ws.exit()  # Останавливаем WebSocket
+            # Либо попробуй ws.ws.close()
+            logging.info(Fore.MAGENTA + "WebSocket соединение закрыто." + Style.RESET_ALL)
         
         # Возвращаем z-score и сигнал
         return zscore, signal_sign_positive
